@@ -1,0 +1,13 @@
+[package]
+name = "cartridge-switcher"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+cartridge-common = { path = "../common", default-features = false }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

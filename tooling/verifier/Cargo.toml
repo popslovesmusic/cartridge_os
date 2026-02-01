@@ -1,0 +1,9 @@
+[package]
+name = "cartridge-verifier"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+cartridge-common = { path = "../../common", features = ["std"] }
+sha2.workspace = true
+clap = { version = "4.4", features = ["derive"] }

@@ -1,0 +1,28 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Build outputs
+*.img
+*.iso
+*.elf
+*.efi
+*.cart
+
+# Test artifacts
+qemu.log
+serial.log
+
+# WSL2 generated files
+*.tmp

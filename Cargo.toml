@@ -1,0 +1,29 @@
+[workspace]
+members = [
+    "kernel",
+    "bootloader",
+    "switcher",
+    "tooling/packager",
+    "tooling/verifier",
+    "common"
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Cartridge OS Team"]
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+# Shared dependencies across workspace
+sha2 = "0.10"
+ed25519-dalek = "2.1"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Link-time optimization
+codegen-units = 1   # Better optimization
+panic = "abort"     # No unwinding in kernel
+strip = true        # Remove debug symbols

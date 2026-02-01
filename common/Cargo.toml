@@ -1,0 +1,13 @@
+[package]
+name = "cartridge-common"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+sha2.workspace = true
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+std = ["serde/std"]
+serde = ["dep:serde"]
