@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File scripts/check-kernel-size.ps1)",
+      "Bash(./target/x86_64-pc-windows-msvc/release/cartridge-packager.exe:*)"
     ],
     "deny": [],
     "ask": []

@@ -4,6 +4,12 @@
 
 use core::fmt;
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use std::vec::Vec;
+
 /// Capability flags (bitfield in artifact header)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Capability(pub u64);

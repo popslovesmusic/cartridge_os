@@ -3,9 +3,11 @@
 //! Non-authoritative human-facing metadata stored in artifact.
 
 /// Tanka structure: 5 lines with syllable counts [5, 7, 5, 7, 7]
-#[derive(Debug, Clone)]
+/// Stored as fixed-size buffers for no_std compatibility
+#[derive(Debug, Clone, Copy)]
 pub struct Tanka {
-    pub lines: [String; 5],
+    /// Fixed 320-byte buffer (5 lines × 64 bytes)
+    data: [u8; 320],
 }
 
 impl Tanka {
@@ -15,60 +17,57 @@ impl Tanka {
     /// Expected syllable counts
     pub const SYLLABLE_PATTERN: [usize; 5] = [5, 7, 5, 7, 7];
 
-    pub fn new(lines: [String; 5]) -> Self {
-        Self { lines }
+    /// Create from raw byte buffer
+    pub const fn from_bytes(data: [u8; 320]) -> Self {
+        Self { data }
     }
 
-    /// Validate line lengths (basic check)
+    /// Get raw byte buffer
+    pub const fn to_bytes(&self) -> &[u8; 320] {
+        &self.data
+    }
+
+    /// Get a specific line (returns slice of buffer)
+    pub fn get_line(&self, index: usize) -> Option<&[u8]> {
+        if index >= 5 {
+            return None;
+        }
+
+        let start = index * Self::MAX_LINE_LENGTH;
+        let end = start + Self::MAX_LINE_LENGTH;
+        let line_bytes = &self.data[start..end];
+
+        // Find null terminator or end
+        let len = line_bytes.iter().position(|&b| b == 0).unwrap_or(Self::MAX_LINE_LENGTH);
+
+        Some(&line_bytes[..len])
+    }
+
+    /// Validate basic structure (at least some non-zero data)
     pub fn is_valid(&self) -> bool {
-        self.lines.iter().all(|line| {
-            !line.is_empty() && line.len() <= Self::MAX_LINE_LENGTH
-        })
-    }
-
-    /// Serialize to fixed-size buffer (320 bytes: 5 lines × 64 bytes)
-    pub fn to_bytes(&self) -> [u8; 320] {
-        let mut buffer = [0u8; 320];
-
-        for (i, line) in self.lines.iter().enumerate() {
-            let start = i * Self::MAX_LINE_LENGTH;
-            let line_bytes = line.as_bytes();
-            let len = line_bytes.len().min(Self::MAX_LINE_LENGTH);
-            buffer[start..start + len].copy_from_slice(&line_bytes[..len]);
-        }
-
-        buffer
-    }
-
-    /// Deserialize from fixed-size buffer
-    pub fn from_bytes(buffer: &[u8; 320]) -> Self {
-        let mut lines: [String; 5] = Default::default();
-
-        for i in 0..5 {
-            let start = i * Self::MAX_LINE_LENGTH;
-            let end = start + Self::MAX_LINE_LENGTH;
-            let line_bytes = &buffer[start..end];
-
-            // Find null terminator or end
-            let len = line_bytes.iter().position(|&b| b == 0).unwrap_or(Self::MAX_LINE_LENGTH);
-
-            lines[i] = String::from_utf8_lossy(&line_bytes[..len]).to_string();
-        }
-
-        Self { lines }
+        self.data.iter().any(|&b| b != 0)
     }
 }
 
 impl Default for Tanka {
     fn default() -> Self {
-        Self {
-            lines: [
-                "Unnamed artifact".to_string(),
-                "Identity awaits a name".to_string(),
-                "In silent bytes".to_string(),
-                "Potential lies encrypted".to_string(),
-                "Purpose not yet revealed".to_string(),
-            ],
+        let mut data = [0u8; 320];
+
+        // Default Tanka text (const-compatible)
+        const LINES: [&[u8]; 5] = [
+            b"Unnamed artifact",
+            b"Identity awaits a name",
+            b"In silent bytes",
+            b"Potential lies encrypted",
+            b"Purpose not yet revealed",
+        ];
+
+        for (i, line) in LINES.iter().enumerate() {
+            let start = i * Self::MAX_LINE_LENGTH;
+            let len = line.len().min(Self::MAX_LINE_LENGTH);
+            data[start..start + len].copy_from_slice(&line[..len]);
         }
+
+        Self { data }
     }
 }

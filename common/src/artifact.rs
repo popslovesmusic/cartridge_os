@@ -5,6 +5,12 @@
 
 use sha2::{Digest, Sha256};
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use std::vec::Vec;
+
 /// Magic number identifying a valid artifact: 0xCAFEBABE
 pub const ARTIFACT_MAGIC: u32 = 0xCAFE_BABE;
 

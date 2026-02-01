@@ -5,6 +5,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
 pub mod artifact;
 pub mod capability;
 pub mod tanka;
