@@ -1,0 +1,11 @@
+# Cargo config for Hello World cartridge
+
+[build]
+target = "x86_64-unknown-none"
+
+[target.x86_64-unknown-none]
+# Use absolute path to linker script
+rustflags = [
+    "-C", "link-arg=-TE:/OS/cartridges/hello-world/linker.ld",
+    "-C", "relocation-model=static",
+]

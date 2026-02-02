@@ -16,6 +16,7 @@ mod capability;
 mod ipc;
 mod scheduler;
 mod syscall;
+mod serial;
 
 use core::panic::PanicInfo;
 use core::alloc::{GlobalAlloc, Layout};
@@ -23,6 +24,11 @@ use core::alloc::{GlobalAlloc, Layout};
 /// Kernel entry point
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    // Initialize serial port FIRST (our only output mechanism)
+    serial::init();
+
+    serial_println!("[KERNEL] Cartridge OS Kernel starting...");
+
     // Initialize kernel subsystems
     memory::init();
     capability::init();
@@ -30,13 +36,12 @@ pub extern "C" fn _start() -> ! {
     scheduler::init();
     syscall::init();
 
-    // Boot message
-    kernel_log("Cartridge OS Kernel initialized");
+    serial_println!("[KERNEL] All subsystems initialized");
 
     // Show memory stats
     let stats = memory::get_stats();
-    kernel_log("Memory allocator ready");
-    kernel_log("Syscall interface ready");
+    serial_println!("[KERNEL] Memory: {} bytes allocated, {} pages",
+        stats.total_allocated, stats.page_count);
 
     // Hand off to switcher (loaded from initramfs)
     // TODO: Load and verify switcher artifact
@@ -52,7 +57,15 @@ pub extern "C" fn _start() -> ! {
 /// Panic handler
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    kernel_log("KERNEL PANIC");
+    serial_println!("\n[KERNEL PANIC]");
+
+    if let Some(location) = info.location() {
+        serial_println!("  Location: {}:{}:{}",
+            location.file(), location.line(), location.column());
+    }
+
+    serial_println!("  Info: {}", info);
+    serial_println!("System halted.");
 
     loop {
         unsafe {
@@ -64,7 +77,8 @@ fn panic(info: &PanicInfo) -> ! {
 /// Allocation error handler
 #[alloc_error_handler]
 fn alloc_error(layout: Layout) -> ! {
-    kernel_log("ALLOCATION FAILED");
+    serial_println!("[KERNEL] ALLOCATION FAILED: size={}, align={}",
+        layout.size(), layout.align());
     loop {
         unsafe {
             core::arch::asm!("hlt");
@@ -72,10 +86,9 @@ fn alloc_error(layout: Layout) -> ! {
     }
 }
 
-/// Simple kernel logging (will output to serial/screen)
-pub fn kernel_log(_msg: &str) {
-    // TODO: Implement proper logging to serial port
-    // For now, this is a placeholder
+/// Kernel logging function (routes to serial)
+pub fn kernel_log(msg: &str) {
+    serial_println!("{}", msg);
 }
 
 /// Kernel global allocator backed by physical memory allocator

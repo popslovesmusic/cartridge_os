@@ -8,12 +8,14 @@ target = "x86_64-unknown-none"
 [alias]
 build-tools = "build --package cartridge-packager --package cartridge-verifier --target x86_64-pc-windows-msvc"
 build-kernel = "build --package cartridge-kernel --target x86_64-unknown-none"
+build-switcher = "build --package cartridge-switcher --target x86_64-unknown-none"
 build-bootloader = "build --package cartridge-bootloader --target x86_64-unknown-uefi"
 
 # Cross-compilation targets
 [target.x86_64-unknown-none]
 rustflags = [
-    "-C", "link-arg=-Tkernel/linker.ld",
+    # Note: kernel and switcher override this in their Cargo.toml
+    # Cartridges use their own linker scripts
     "-C", "relocation-model=static",
 ]
 

@@ -54,7 +54,7 @@ static NEXT_CHANNEL_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Initialize IPC subsystem
 pub fn init() {
-    crate::kernel_log("IPC subsystem initialized");
+    crate::serial_println!("[KERNEL] IPC subsystem initialized");
 }
 
 /// Create zero-copy shared memory window between two components

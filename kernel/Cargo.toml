@@ -6,6 +6,10 @@ edition.workspace = true
 [dependencies]
 cartridge-common = { path = "../common", default-features = false }
 
+# Package-specific linker script
+[target.x86_64-unknown-none]
+rustflags = ["-C", "link-arg=-Tkernel/linker.ld"]
+
 [profile.dev]
 panic = "abort"
 

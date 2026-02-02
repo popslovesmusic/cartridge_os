@@ -8,7 +8,12 @@
       "Bash(dir:*)",
       "Bash(findstr:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/check-kernel-size.ps1)",
-      "Bash(./target/x86_64-pc-windows-msvc/release/cartridge-packager.exe:*)"
+      "Bash(./target/x86_64-pc-windows-msvc/release/cartridge-packager.exe:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.rs)",
+      "Bash(CARGO_TARGET_DIR=target cargo build:*)",
+      "Bash(cargo rustc:*)",
+      "Bash(cargo run:*)"
     ],
     "deny": [],
     "ask": []

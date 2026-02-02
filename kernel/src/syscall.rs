@@ -105,7 +105,7 @@ pub fn init() {
     // MSR_STAR = kernel/user CS/SS
     // MSR_SFMASK = RFLAGS mask
 
-    crate::kernel_log("Syscall subsystem initialized");
+    crate::serial_println!("[KERNEL] Syscall subsystem initialized");
 }
 
 /// Main syscall dispatcher

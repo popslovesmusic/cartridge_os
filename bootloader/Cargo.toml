@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 cartridge-common = { path = "../common", default-features = false }
+uefi = { version = "0.30", features = ["alloc"] }
 
 [profile.dev]
 panic = "abort"

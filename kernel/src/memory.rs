@@ -76,7 +76,7 @@ pub fn init() {
     // TODO: Set up page tables (identity mapping + higher half)
     // TODO: Enable paging
 
-    crate::kernel_log("Memory subsystem initialized");
+    crate::serial_println!("[KERNEL] Memory subsystem initialized");
 }
 
 /// Allocate isolated memory region for a cartridge

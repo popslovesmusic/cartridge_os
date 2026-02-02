@@ -1,0 +1,18 @@
+[package]
+name = "hello-world"
+version = "0.1.0"
+edition = "2021"
+
+# Standalone package (not part of workspace)
+[workspace]
+
+[dependencies]
+# No dependencies - pure no_std cartridge
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = "z"  # Optimize for size
+lto = true       # Link-time optimization
