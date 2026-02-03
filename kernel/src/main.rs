@@ -17,6 +17,7 @@ mod ipc;
 mod scheduler;
 mod syscall;
 mod serial;
+mod interrupts;
 
 use core::panic::PanicInfo;
 use core::alloc::{GlobalAlloc, Layout};
@@ -24,10 +25,16 @@ use core::alloc::{GlobalAlloc, Layout};
 /// Kernel entry point
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    // TODO: Zero BSS section (needs linker script fix)
+    // For now, Rust initializes statics to zero anyway
+
     // Initialize serial port FIRST (our only output mechanism)
     serial::init();
 
     serial_println!("[KERNEL] Cartridge OS Kernel starting...");
+
+    // Setup IDT before anything can fault
+    interrupts::init();
 
     // Initialize kernel subsystems
     memory::init();

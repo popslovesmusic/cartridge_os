@@ -120,15 +120,48 @@ fn package_kernel(input: &PathBuf, output: &PathBuf) {
 
     let payload = fs::read(input).expect("Failed to read kernel binary");
 
-    // Kernel gets no capabilities (it enforces them, doesn't request them)
-    let header = ArtifactHeader::new(ArtifactType::Kernel, 0, 0, &payload);
+    // Parse ELF header to get correct entry point
+    if payload.len() < 32 {
+        panic!("Kernel binary too small (< 32 bytes)");
+    }
 
+    // Verify ELF magic number
+    if &payload[0..4] != b"\x7FELF" {
+        panic!("Input is not a valid ELF file (missing ELF magic)");
+    }
+
+    // Entry point is at offset 24 in ELF64 header (8 bytes, little-endian)
+    let entry_vaddr = u64::from_le_bytes(
+        payload[24..32].try_into().expect("Failed to read entry point")
+    );
+
+    // Kernel is loaded at 0x100000 (1MB) - see kernel/linker.ld
+    const KERNEL_LOAD_ADDR: u64 = 0x100000;
+
+    // Entry offset is relative to load address
+    let entry_offset = entry_vaddr.checked_sub(KERNEL_LOAD_ADDR)
+        .expect("Entry point is below kernel load address");
+
+    println!("  ELF entry point (virtual): {:#x}", entry_vaddr);
+    println!("  Kernel load address:       {:#x}", KERNEL_LOAD_ADDR);
+    println!("  Entry offset (relative):   {:#x}", entry_offset);
+
+    // Kernel gets no capabilities (it enforces them, doesn't request them)
+    let header = ArtifactHeader::new(ArtifactType::Kernel, entry_offset, 0, &payload);
+
+    let payload_len = payload.len();
     let artifact = Artifact { header, payload };
 
     let artifact_bytes = artifact.to_bytes();
+    let artifact_len = artifact_bytes.len();
     fs::write(output, artifact_bytes).expect("Failed to write artifact");
 
     println!("✓ Kernel packaged successfully");
+    println!("  Artifact size: {} bytes ({} header + {} payload)",
+        artifact_len,
+        128, // ArtifactHeader::SIZE
+        payload_len
+    );
 }
 
 fn package_artifact(

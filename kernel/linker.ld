@@ -31,8 +31,10 @@ SECTIONS
 
     .bss :
     {
+        PROVIDE(__bss_start = .);
         *(COMMON)
         *(.bss .bss.*)
+        PROVIDE(__bss_end = .);
     }
 
     /DISCARD/ :

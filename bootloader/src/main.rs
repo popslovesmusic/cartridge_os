@@ -10,9 +10,9 @@
 
 extern crate alloc;
 
-use alloc::alloc::{GlobalAlloc, Layout};
 use alloc::vec::Vec;
 use cartridge_common::{Artifact, ArtifactType};
+use uefi::allocator::Allocator;
 use uefi::prelude::*;
 use uefi::proto::console::text::Output;
 use uefi::proto::media::file::{File, FileAttribute, FileMode};
@@ -22,20 +22,7 @@ use uefi::CString16;
 
 /// Global allocator for bootloader (uses UEFI boot services)
 #[global_allocator]
-static ALLOCATOR: UefiAllocator = UefiAllocator;
-
-struct UefiAllocator;
-
-unsafe impl GlobalAlloc for UefiAllocator {
-    unsafe fn alloc(&self, _layout: Layout) -> *mut u8 {
-        // UEFI helpers::init() sets up the global allocator
-        core::ptr::null_mut()
-    }
-
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {
-        // Managed by UEFI
-    }
-}
+static ALLOCATOR: Allocator = Allocator;
 
 /// Bootloader entry point (UEFI application)
 #[entry]
@@ -105,13 +92,32 @@ fn main(image_handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         boot_log(stdout, "[BOOTLOADER] Allocating kernel memory...");
     }
 
+    // Use LOADER_CODE for executable kernel code (not LOADER_DATA)
     let _kernel_mem = system_table.boot_services()
         .allocate_pages(
             uefi::table::boot::AllocateType::Address(kernel_base),
-            MemoryType::LOADER_DATA,
+            MemoryType::LOADER_CODE,
             kernel_pages,
         )
         .expect("Failed to allocate kernel memory");
+
+    // Allocate 64KB stack for kernel (16 pages of 4KB each)
+    // Stack grows downward, so we allocate at a higher address
+    let stack_top = 0x80000u64;  // Stack at 512KB
+    let stack_pages: usize = 16;  // 64KB stack
+
+    {
+        let stdout = system_table.stdout();
+        boot_log(stdout, "[BOOTLOADER] Allocating kernel stack...");
+    }
+
+    let _stack_mem = system_table.boot_services()
+        .allocate_pages(
+            uefi::table::boot::AllocateType::Address(stack_top - (stack_pages as u64 * 4096)),
+            MemoryType::LOADER_DATA,  // Stack can be data memory
+            stack_pages,
+        )
+        .expect("Failed to allocate kernel stack");
 
     // Step 5: Copy kernel to memory
     unsafe {
@@ -135,12 +141,20 @@ fn main(image_handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
         system_table.exit_boot_services(MemoryType::LOADER_DATA)
     };
 
-    // Jump to kernel entry point
-    let kernel_entry: extern "C" fn() -> ! = unsafe {
-        core::mem::transmute(kernel_base as usize + artifact.header.entry_offset as usize)
-    };
+    // Jump to kernel entry point with proper stack setup
+    let kernel_entry_addr = kernel_base as usize + artifact.header.entry_offset as usize;
 
-    kernel_entry()
+    unsafe {
+        // Set up stack pointer and jump to kernel
+        // The kernel expects RSP to be set to a valid stack
+        core::arch::asm!(
+            "mov rsp, {stack_top}",
+            "jmp {entry}",
+            stack_top = in(reg) stack_top,
+            entry = in(reg) kernel_entry_addr,
+            options(noreturn)
+        );
+    }
 }
 
 /// Load kernel from EFI System Partition
